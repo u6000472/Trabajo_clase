@@ -1,0 +1,247 @@
+ <!DOCTYPE html>
+<html>
+  <head>
+    <title>Transformaciones</title>
+    <style>
+      html, body { margin: 0; padding: 0; overflow: hidden; }
+      #info {
+          position: absolute;
+          padding: 10px;
+          width: 100%;
+          text-align: center;
+          color: #FFFFFF;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="info"><p id="transf">TRASLACIÓN</p>
+          Usar flecha arriba y abajo para mover sobre eje Y<br/>
+		  Usar flecha izquierda y derecha para mover sobre eje X<br/>
+		  Usar tecla 'Inicio' y 'Fin' para mover sobre eje Z<br/>
+		  Usar tecla NumPad5 ('Clear') para mover al origen<br/>
+		  Usar 'R' para rotar, 'T' para trasladar y 'E' para escalar<br/>
+    </div>
+    <script src="js/three.min.js"></script>
+    <script>
+		var scene, aspect, camera, renderer;
+		var startTime = Date.now();
+		var leftArrow = false;
+		var rightArrow = false;
+		var upArrow = false;
+		var downArrow = false;
+		var clearKey = false;
+		var homeKey = false;
+		var endKey = false;
+		var R_Key = false;
+		var object, transf = 'T';
+		var angulo = Math.PI/12; // 15°
+		var x = Math.cos(angulo);
+		var y = Math.sin(angulo);
+		init();
+		animate();
+	
+		function init() {
+			//INICIALIZACIÓN DE LA ESCENA
+			scene = new THREE.Scene();
+			aspect = window.innerWidth / window.innerHeight;
+			camera = new THREE.PerspectiveCamera( 45, aspect, 0.1, 1000);
+			renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+				  			
+			//EVENTOS DE TECLADO
+			//Códigos de teclado: http://keycode.info 
+			var onKeyDown = function ( event ) {
+				switch ( event.keyCode ) {
+					case 35: // 
+						endKey = true;
+						break;
+					case 36: // 
+						homeKey = true;
+						break;
+					case 37: // 
+						leftArrow = true;
+						break;
+					case 38: // TRASLADAR EN DIRECCION POSITIVA
+						upArrow = true;
+						break;
+					case 39:
+						rightArrow = true;
+						break;
+					case 40: // TRASLADAR EN DIRECCION NEGATIVA
+						downArrow = true;
+						break;
+					case 12:  // IR AL ORIGEN DE LAS COORDENADAS NumPad5(clear)
+						clearKey = true;
+						break;
+					case 69:  // ACTIVAR ESCALADO
+						transf = 'E';
+						document.getElementById("transf").innerHTML = "ESCALADO";
+						break;
+					case 82:  // ACTIVAR ROTACION
+						transf = 'R';
+						R_Key = true;
+						document.getElementById("transf").innerHTML = "ROTACIÓN";
+						break;
+					case 84:  // ACTIVAR TRASLACION
+						transf = 'T';
+						document.getElementById("transf").innerHTML = "TRASLACIÓN";
+						break;				}
+			};	  
+		  			
+			var onKeyUp = function ( event ) {
+				upArrow = false;
+				downArrow = false;
+				leftArrow = false;
+				rightArrow = false;
+				clearKey = false;
+				homeKey = false;
+				endKey = false;
+				R_Key=false;
+			};	  	
+			
+			document.addEventListener( 'keydown', onKeyDown, false );
+			document.addEventListener( 'keyup', onKeyUp, false );
+			
+			//ELEMENTOS DE ESCENA
+			var size = 10;
+			var arrowSize = 1;
+			var divisions = size;
+			var origin = new THREE.Vector3( 0, 0, 0 );
+			var x = new THREE.Vector3( 1, 0, 0 );
+			var y = new THREE.Vector3( 0, 1, 0 );
+		  	var z = new THREE.Vector3( 0, 0, 1 );
+			var color1 = new THREE.Color( 0xFFFFFF );
+		  	var color2 = new THREE.Color( 0x333333 );
+		  	var colorR = new THREE.Color( 0xAA3333 );
+		  	var colorG = new THREE.Color( 0x33AA33 );
+		  	var colorB = new THREE.Color( 0x333366 );
+			var colorRd = new THREE.Color( 0xAA6666 );
+		  	var colorGd = new THREE.Color( 0x66AA66 );
+		  	var colorBd = new THREE.Color( 0x6666AA );
+		  
+		  	//CREAR LAS GRILLAS PARA EL ESCENARIO
+		  	var axesHelper = new THREE.AxesHelper( size );
+		  	var gridHelperXY = new THREE.GridHelper( size, divisions, color1, color1);
+		  	var gridHelperXZ = new THREE.GridHelper( size, divisions, color2, color2 );
+		  	var gridHelperYZ = new THREE.GridHelper( size, divisions, color2, color2 );
+            
+            //ROTARLAS PARA QUE QUEDEN EN EL ESPACIO ADECUADO
+            gridHelperXY.rotateOnWorldAxis ( x, THREE.Math.degToRad(90) );
+            gridHelperXZ.rotateOnWorldAxis ( y, THREE.Math.degToRad(90) );
+            gridHelperYZ.rotateOnWorldAxis ( z, THREE.Math.degToRad(90) );
+            
+            //CREAR LAS FLECHAS QUE INDICAN LOS EJES DE COORDENADAS 3D
+            var arrowX = new THREE.ArrowHelper( x, origin, arrowSize, colorR );
+            var arrowY = new THREE.ArrowHelper( y, origin, arrowSize, colorG );
+            var arrowZ = new THREE.ArrowHelper( z, origin, arrowSize, colorB );
+			
+			//CREAR LAS GEOMETRÍAS
+			////var geometry = new THREE.SphereGeometry( 1, 12, 12 );
+			var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+
+			for ( var i = 0; i < geometry.faces.length; i ++ ) {
+				switch(i) {
+					case 0: case 1: geometry.faces[ i ].color = colorRd; break;
+					case 2: case 3: geometry.faces[ i ].color = colorRd; break;
+					case 4: case 5: geometry.faces[ i ].color = colorGd; break;
+					case 6: case 7: geometry.faces[ i ].color = colorGd; break;
+					case 8: case 9: geometry.faces[ i ].color = colorBd; break;
+					case 10: case 11: geometry.faces[ i ].color = colorBd; break;
+				}				
+			}
+             
+			//CREAR LOS MATERIALES
+            var material = new THREE.MeshBasicMaterial( { color: color1, vertexColors: THREE.FaceColors } );
+			
+			//CREAR LOS OBJETOS
+			object  = new THREE.Mesh( geometry, material );
+		
+		  	//AGREGAR A LA ESCENA
+            scene.add( gridHelperXZ );
+		  	scene.add( arrowX );	
+		  	scene.add( arrowY );	
+		  	scene.add( arrowZ );	
+			scene.add( object );
+			
+			//MOVER LA CÁMARA
+			camera.position.x = 5;
+			camera.position.y = 10;	 
+		  	camera.position.z =  10;			
+		  	camera.lookAt( origin );
+			}
+    
+    function animate() {
+        render();
+        requestAnimationFrame( animate );
+    }
+    
+    function render(){
+        var dtime = Date.now()-startTime;
+		var tx=0, ty=0, tz=0;
+		if(transf == 'E') {
+			tx=1; ty=1; tz=1;
+		}
+		if(upArrow) {	
+			ty= (transf == 'T' ? 1 : transf=='E' ? 1.1: transf=='R'? angulo:0);
+		}
+		if(downArrow) {
+			ty = (transf == 'T' ? -1 : transf == 'E' ? 10/11 : transf == 'R' ?  -angulo : 0);
+		}
+		if(leftArrow) {
+			tx=(transf == 'T' ? -1 : transf == 'E' ? 10/11 : transf == 'R' ?  -angulo : 0);
+		}
+		if(rightArrow) {
+			tx=(transf == 'T' ? 1 : transf=='E' ? 1.1: transf=='R'? angulo:0);
+		}
+		if(homeKey) {
+			tz=(transf == 'T' ? 1 : transf=='E' ? 1.1: transf=='R'? angulo:0);
+		}
+		if(endKey) {
+			tz=(transf == 'T' ? -1 : transf == 'E' ? 10/11 : transf == 'R' ?  -angulo : 0);
+		}
+		if(clearKey) {
+			tx=-object.position.x;
+			ty=-object.position.y;
+			tz=-object.position.z;
+		}
+
+		//MATRIZ DE TRANSFORMACION
+		var t = new THREE.Matrix4();		//Crear la matriz de transformación
+		if (transf == 'T')
+			t.set( 	1, 0, 0, tx,
+					0, 1, 0, ty, 
+					0, 0, 1, tz,
+					0, 0, 0, 1	);
+
+		if (transf == 'E')
+			t.set( 	tx, 0, 0, 0,
+					0, ty, 0, 0, 
+					0, 0, tz, 0,
+					0, 0, 0, 1);
+
+		if (transf == 'R') //Rotar respecto a los ejes
+		if (leftArrow)//EjeX
+			t.set( 	1, 0, 0, 0,   //Gira solo hacia un lado positivo de acuerdo a la flecha que se presione
+					0, x, -y, 0, 
+					0, y,x, 0,
+					0, 0, 0, 1	);
+		else 
+				if (upArrow)//EjeY
+					t.set( 	x, 0, y, 0,
+							0, 1, 0, 0, 
+							-y, 0,x, 0,
+							0, 0, 0, 1	);
+		else if (homeKey)//EjeZ
+					t.set( 	x, -y, 0, 0,
+							y, x, 0, 0, 
+							0, 0,1, 0,
+							0, 0, 0, 1	);			
+		object.applyMatrix(t);				//Aplicar la matriz de transformación al objeto				
+		object.elementsNeedUpdate = true;	//Avisar que la matriz del objeto ha cambiado
+        camera.lookAt( 0, 0, 0 );
+        renderer.render( scene, camera );
+    }
+    </script>
+  </body>
+</html>
